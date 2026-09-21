@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { btn } from '../components/ui'
+import { btn, field } from '../components/ui'
 import { useStore } from '../lib/store'
 import { useMonthData } from '../lib/hooks'
 import { dateLabel, formatMoney, monthLabel, round2 } from '../lib/format'
@@ -10,14 +10,17 @@ export function History({ month, onEdit, onStartMonth }: { month: string; onEdit
   const cur = data.settings.currency
   const { budget, categories, expenses } = useMonthData(month)
   const [filter, setFilter] = useState<string>('all')
+  const [query, setQuery] = useState('')
   const activeFilter = filter === 'all' || categories.some(c => c.id === filter) ? filter : 'all'
 
-  const rows = useMemo(
-    () => expenses
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const amountQ = q.replace(/,/g, '')
+    return expenses
       .filter(e => activeFilter === 'all' || e.categoryId === activeFilter)
-      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
-    [expenses, activeFilter],
-  )
+      .filter(e => !q || e.note.toLowerCase().includes(q) || (categories.find(c => c.id === e.categoryId)?.name.toLowerCase().includes(q) ?? false) || String(e.amount).includes(amountQ))
+      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+  }, [expenses, categories, activeFilter, query])
   const groups = useMemo(() => {
     const map = new Map<string, Expense[]>()
     rows.forEach(e => map.set(e.date, [...(map.get(e.date) ?? []), e]))
@@ -40,6 +43,7 @@ export function History({ month, onEdit, onStartMonth }: { month: string; onEdit
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
+      <input type="search" aria-label="Search expenses" placeholder="Search notes, categories or amounts" className={field} value={query} onChange={e => setQuery(e.target.value)} />
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0" role="group" aria-label="Filter by category">
         <button className={chip(activeFilter === 'all')} aria-pressed={activeFilter === 'all'} onClick={() => setFilter('all')}>All categories</button>
         {categories.map(c => (
@@ -54,7 +58,7 @@ export function History({ month, onEdit, onStartMonth }: { month: string; onEdit
       {rows.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-line p-10 text-center">
           <p className="font-semibold">No expenses here</p>
-          <p className="mt-1 text-muted">{activeFilter === 'all' ? `Nothing logged in ${monthLabel(month)} yet.` : 'Nothing logged in this category yet.'}</p>
+          <p className="mt-1 text-muted">{activeFilter === 'all' ? `Nothing logged in ${monthLabel(month)} yet.` : 'Nothing logged in this category yet.'}{query.trim() && ' Try a different search.'}</p>
         </div>
       ) : (
         groups.map(([date, list]) => (
