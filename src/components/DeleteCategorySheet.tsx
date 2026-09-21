@@ -4,14 +4,15 @@ import { useStore } from '../lib/store'
 import type { Category } from '../lib/types'
 
 export function DeleteCategorySheet({ category, siblings, expenseCount, onClose }: { category: Category; siblings: Category[]; expenseCount: number; onClose: () => void }) {
-  const { dispatch } = useStore()
+  const { data, dispatch } = useStore()
   const notify = useToast()
   const [mode, setMode] = useState<'reassign' | 'delete'>(siblings.length > 0 ? 'reassign' : 'delete')
   const [target, setTarget] = useState(siblings[0]?.id ?? '')
 
   const confirm = () => {
+    const affected = data.expenses.filter(e => e.categoryId === category.id)
     dispatch({ type: 'deleteCategory', id: category.id, expenses: mode === 'reassign' ? { reassignTo: target } : 'delete' })
-    notify(`Deleted ${category.name}`)
+    notify(`Deleted ${category.name}`, { label: 'Undo', onClick: () => dispatch({ type: 'restore', categories: [category], expenses: affected }) })
     onClose()
   }
   const n = `${expenseCount} expense${expenseCount === 1 ? '' : 's'}`
