@@ -2,7 +2,7 @@ export interface Budget { id: string; month: string; totalAmount: number } // mo
 export interface Category { id: string; budgetId: string; name: string; allocatedAmount: number; color?: string }
 export interface Expense { id: string; categoryId: string; amount: number; note: string; date: string; createdAt: string }
 export type ThemeMode = 'light' | 'dark' | 'system'
-export interface Settings { currency: string; theme: ThemeMode }
+export interface Settings { currency: string; theme: ThemeMode; lastBackupAt?: string }
 export interface AppData {
   version: 1
   budgets: Budget[]
