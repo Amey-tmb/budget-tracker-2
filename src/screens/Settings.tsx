@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import { Icon, Modal, Notice, btn, field, useToast } from '../components/ui'
 import { useStore } from '../lib/store'
-import { exportJSON, parseBackup } from '../lib/storage'
+import { parseBackup } from '../lib/storage'
+import { downloadBackup } from '../lib/backup'
 import { monthOf } from '../lib/format'
 import type { AppData, ThemeMode } from '../lib/types'
 
@@ -20,13 +21,8 @@ export function Settings() {
   const [pending, setPending] = useState<AppData | null>(null)
 
   const exportBackup = () => {
-    const blob = new Blob([exportJSON(data)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `budget-backup-${new Date().toISOString().slice(0, 10)}.json`
-    document.body.appendChild(a); a.click(); a.remove()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    const at = downloadBackup(data)
+    dispatch({ type: 'setSettings', patch: { lastBackupAt: at } })
     notify('Backup downloaded')
   }
 
@@ -76,6 +72,7 @@ export function Settings() {
         <h2 className="text-lg font-bold">Backup and restore</h2>
         <p className="mt-1 text-sm text-muted">
           {data.budgets.length} month{data.budgets.length === 1 ? '' : 's'}, {data.categories.length} categories and {data.expenses.length} expenses are stored on this device.
+          {' '}{data.settings.lastBackupAt ? `Last backup: ${new Date(data.settings.lastBackupAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}.` : 'You have not made a backup yet.'}
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button onClick={exportBackup} className={`${btn.primary} flex-1`}><Icon name="download" /> Export backup</button>
@@ -96,7 +93,7 @@ export function Settings() {
             </p>
             <div className="flex gap-2">
               <button onClick={() => setPending(null)} className={`${btn.secondary} flex-1`}>Cancel</button>
-              <button onClick={() => { dispatch({ type: 'replaceAll', data: pending }); setPending(null); notify('Backup restored') }} className={`${btn.primary} flex-1`}>Replace data</button>
+              <button onClick={() => { dispatch({ type: 'replaceAll', data: { ...pending, settings: { ...pending.settings, lastBackupAt: new Date().toISOString() } } }); setPending(null); notify('Backup restored') }} className={`${btn.primary} flex-1`}>Replace data</button>
             </div>
           </div>
         </Modal>
