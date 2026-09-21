@@ -41,3 +41,11 @@ export function uid(): string {
 }
 
 export const CATEGORY_COLORS = ['#3347E0', '#12A594', '#E5484D', '#F5A524', '#8E4EC6', '#0091FF', '#D6409F', '#6E8B3D']
+
+/** Days left in the month including today, or null when `month` is not the current month. */
+export function daysLeftInMonth(month: string): number | null {
+  if (month !== monthOf()) return null
+  const now = new Date()
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  return last - now.getDate() + 1
+}
