@@ -10,7 +10,7 @@ export function BudgetSetup({ month, onStartMonth }: { month: string; onStartMon
   const { data, dispatch } = useStore()
   const notify = useToast()
   const cur = data.settings.currency
-  const { budget, categories, totals } = useMonthData(month)
+  const { budget, categories, expenses, totals } = useMonthData(month)
   const [newName, setNewName] = useState('')
   const [newAmt, setNewAmt] = useState(0)
   const [deleting, setDeleting] = useState<Category | null>(null)
@@ -108,7 +108,10 @@ export function BudgetSetup({ month, onStartMonth }: { month: string; onStartMon
             <p className="text-sm font-medium">Delete {monthLabel(month)} with its {categories.length} categories and every expense in them?</p>
             <div className="mt-3 flex gap-2">
               <button onClick={() => setConfirmMonthDelete(false)} className={`${btn.secondary} flex-1 py-2`}>Keep</button>
-              <button onClick={() => { dispatch({ type: 'deleteBudget', budgetId: budget.id }); notify(`Deleted ${monthLabel(month)}`) }} className={`${btn.danger} flex-1 py-2`}>Delete</button>
+              <button onClick={() => {
+                dispatch({ type: 'deleteBudget', budgetId: budget.id })
+                notify(`Deleted ${monthLabel(month)}`, { label: 'Undo', onClick: () => dispatch({ type: 'restore', budgets: [budget], categories, expenses }) })
+              }} className={`${btn.danger} flex-1 py-2`}>Delete</button>
             </div>
           </div>
         ) : (
