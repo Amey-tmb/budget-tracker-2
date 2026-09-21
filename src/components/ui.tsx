@@ -103,25 +103,34 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
 }
 
 /* ---------- Toast ---------- */
-const ToastContext = createContext<(msg: string) => void>(() => {})
+export interface ToastAction { label: string; onClick: () => void }
+const ToastContext = createContext<(msg: string, action?: ToastAction) => void>(() => {})
 export const useToast = () => useContext(ToastContext)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [msg, setMsg] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ msg: string; action?: ToastAction } | null>(null)
   const timer = useRef<number | undefined>(undefined)
-  const notify = (m: string) => {
-    setMsg(m)
+  const notify = (msg: string, action?: ToastAction) => {
+    setToast({ msg, action })
     window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setMsg(null), 3200)
+    timer.current = window.setTimeout(() => setToast(null), action ? 7000 : 3200)
   }
   return (
     <ToastContext.Provider value={notify}>
       {children}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-[max(0.75rem,env(safe-area-inset-top))] z-[60] flex justify-center px-4">
-        {msg && (
-          <div className="pointer-events-auto flex animate-sheet items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg shadow-lg">
-            <Icon name="check" className="h-4 w-4" />
-            {msg}
+        {toast && (
+          <div className={`pointer-events-auto flex animate-sheet items-center gap-2 rounded-full bg-ink py-2.5 pl-4 text-sm font-medium text-bg shadow-lg ${toast.action ? 'pr-2' : 'pr-4'}`}>
+            <Icon name="check" className="h-4 w-4 shrink-0" />
+            {toast.msg}
+            {toast.action && (
+              <button
+                onClick={() => { toast.action!.onClick(); notify('Restored') }}
+                className="ml-1 rounded-full px-3 py-1 font-bold underline decoration-2 underline-offset-2 hover:bg-bg/15"
+              >
+                {toast.action.label}
+              </button>
+            )}
           </div>
         )}
       </div>
