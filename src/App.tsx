@@ -6,10 +6,11 @@ import { Settings } from './screens/Settings'
 import { ExpenseSheet } from './components/ExpenseSheet'
 import { NewMonthSheet } from './components/NewMonthSheet'
 import { MonthSwitcher } from './components/MonthSwitcher'
-import { Icon, Notice, ToastProvider, btn, type IconName } from './components/ui'
+import { Icon, Notice, ToastProvider, btn, useToast, type IconName } from './components/ui'
 import { useStore } from './lib/store'
 import { useMonthData } from './lib/hooks'
 import { monthOf } from './lib/format'
+import { downloadBackup } from './lib/backup'
 import type { Expense } from './lib/types'
 
 type Screen = 'home' | 'history' | 'budget' | 'settings'
@@ -27,7 +28,9 @@ type Sheet =
   | null
 
 function Shell() {
-  const { data, saveFailed } = useStore()
+  const { data, dispatch, saveFailed } = useStore()
+  const notify = useToast()
+  const [backupDismissed, setBackupDismissed] = useState(false)
   const [screen, setScreen] = useState<Screen>('home')
   const [month, setMonth] = useState(monthOf())
   const [sheet, setSheet] = useState<Sheet>(null)
@@ -67,6 +70,15 @@ function Shell() {
 
   const showMonthSwitcher = screen !== 'settings'
 
+  // Nudge for a backup: 30+ days since the last one, or none yet after 5 expenses.
+  const lastBackup = data.settings.lastBackupAt
+  const daysSince = lastBackup ? Math.floor((Date.now() - new Date(lastBackup).getTime()) / 86_400_000) : null
+  const needsBackup = !backupDismissed && screen !== 'settings' && (daysSince !== null ? daysSince >= 30 : data.expenses.length >= 5)
+  const backupNow = () => {
+    dispatch({ type: 'setSettings', patch: { lastBackupAt: downloadBackup(data) } })
+    notify('Backup downloaded')
+  }
+
   return (
     <div className="min-h-dvh">
       {/* Sidebar (laptop) */}
@@ -99,6 +111,18 @@ function Shell() {
           {saveFailed && (
             <div className="mb-4">
               <Notice tone="bad">This browser is not letting the app save data (private browsing or full storage). Changes will be lost when you close the tab. Export a backup from Settings.</Notice>
+            </div>
+          )}
+
+          {needsBackup && (
+            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 sm:flex-row sm:items-center">
+              <p className="flex-1 text-sm font-medium text-warn">
+                Your budget only exists in this browser. {daysSince !== null ? `Your last backup was ${daysSince} days ago.` : 'You have not made a backup yet.'}
+              </p>
+              <div className="flex gap-2">
+                <button onClick={backupNow} className={`${btn.primary} px-4 py-2 text-sm`}>Back up now</button>
+                <button onClick={() => setBackupDismissed(true)} className={`${btn.ghost} px-3 py-2 text-sm`}>Later</button>
+              </div>
             </div>
           )}
 
