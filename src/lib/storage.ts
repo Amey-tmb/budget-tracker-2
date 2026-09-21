@@ -54,6 +54,7 @@ export function normalize(raw: unknown): AppData {
   const settings: Settings = {
     currency: isStr(s.currency) && s.currency.length <= 4 ? s.currency : DEFAULT_SETTINGS.currency,
     theme: s.theme === 'light' || s.theme === 'dark' || s.theme === 'system' ? s.theme : DEFAULT_SETTINGS.theme,
+    lastBackupAt: isStr(s.lastBackupAt) ? s.lastBackupAt : undefined,
   }
   return { version: 1, budgets, categories, expenses, settings }
 }
