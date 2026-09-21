@@ -2,7 +2,7 @@ import { Icon, Notice, ProgressBar, btn, statusText } from '../components/ui'
 import { useStore } from '../lib/store'
 import { useMonthData } from '../lib/hooks'
 import { categoryStats } from '../lib/calc'
-import { formatMoney, monthLabel } from '../lib/format'
+import { daysLeftInMonth, formatMoney, monthLabel } from '../lib/format'
 
 interface Props {
   month: string
@@ -28,6 +28,7 @@ export function Dashboard({ month, onAdd, onStartMonth, onGoBudget }: Props) {
   }
 
   const over = totals.remaining < 0
+  const daysLeft = daysLeftInMonth(month)
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-line bg-surface p-5 sm:p-7">
@@ -39,6 +40,11 @@ export function Dashboard({ month, onAdd, onStartMonth, onGoBudget }: Props) {
           <div><dt className="text-muted">Spent</dt><dd className={`num text-base font-semibold sm:text-lg ${statusText[totals.status]}`}>{m(totals.spent)}</dd></div>
           <div><dt className="text-muted">Unallocated</dt><dd className={`num text-base font-semibold sm:text-lg ${totals.unallocated < 0 ? 'text-bad' : ''}`}>{m(totals.unallocated)}</dd></div>
         </dl>
+        {daysLeft !== null && totals.remaining > 0 && (
+          <p className="num mt-5 border-t border-line pt-4 text-sm text-muted">
+            About <span className="font-semibold text-ink">{m(Math.floor(totals.remaining / daysLeft))}</span> a day for the next {daysLeft} day{daysLeft === 1 ? '' : 's'}.
+          </p>
+        )}
       </section>
 
       {totals.unallocated < 0 && (
