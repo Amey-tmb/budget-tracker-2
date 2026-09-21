@@ -51,8 +51,9 @@ export function ExpenseSheet({ month, categories, editing, presetCategoryId, onC
 
   const remove = () => {
     if (!editing) return
-    dispatch({ type: 'deleteExpense', id: editing.id })
-    notify('Expense deleted')
+    const removed = editing
+    dispatch({ type: 'deleteExpense', id: removed.id })
+    notify('Expense deleted', { label: 'Undo', onClick: () => dispatch({ type: 'restore', expenses: [removed] }) })
     onClose()
   }
 
