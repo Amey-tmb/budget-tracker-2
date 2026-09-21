@@ -18,6 +18,7 @@ export type Action =
   | { type: 'deleteExpense'; id: string }
   | { type: 'setSettings'; patch: Partial<Settings> }
   | { type: 'replaceAll'; data: AppData }
+  | { type: 'restore'; budgets?: Budget[]; categories?: Category[]; expenses?: Expense[] }
 
 function reducer(s: AppData, a: Action): AppData {
   switch (a.type) {
@@ -56,6 +57,15 @@ function reducer(s: AppData, a: Action): AppData {
       return { ...s, settings: { ...s.settings, ...a.patch } }
     case 'replaceAll':
       return a.data
+    case 'restore': {
+      // Put back records removed by an undoable delete (upsert by id).
+      const upsert = <T extends { id: string }>(list: T[], add?: T[]) => {
+        if (!add?.length) return list
+        const ids = new Set(add.map(x => x.id))
+        return [...list.filter(x => !ids.has(x.id)), ...add]
+      }
+      return { ...s, budgets: upsert(s.budgets, a.budgets), categories: upsert(s.categories, a.categories), expenses: upsert(s.expenses, a.expenses) }
+    }
   }
 }
 
